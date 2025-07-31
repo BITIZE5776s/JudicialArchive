@@ -34,7 +34,7 @@ export function DocumentListItem({ document, onViewDocument }: DocumentListItemP
       onClick={() => onViewDocument?.(document.id)}
     >
       <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
-        <i className={getFileIcon(mainPaper?.fileType)}></i>
+        <i className={getFileIcon(mainPaper?.fileType ?? undefined)}></i>
       </div>
       <div className="flex-1 min-w-0">
         <h3 className="text-sm font-medium text-gray-900 truncate">
@@ -44,7 +44,7 @@ export function DocumentListItem({ document, onViewDocument }: DocumentListItemP
           <p className="text-xs text-gray-500">{document.category}</p>
           <p className="text-xs text-gray-500">{timeAgo}</p>
           <p className="text-xs text-gray-500">
-            {formatFileSize(mainPaper?.fileSize)}
+            {formatFileSize(mainPaper?.fileSize ?? undefined)}
           </p>
         </div>
       </div>

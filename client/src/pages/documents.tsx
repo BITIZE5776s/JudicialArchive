@@ -20,16 +20,16 @@ import { useLocation } from "wouter";
 export default function Documents() {
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [selectedStatus, setSelectedStatus] = useState<string>("");
-  const [selectedBlock, setSelectedBlock] = useState<string>("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [selectedBlock, setSelectedBlock] = useState<string>("all");
 
   // Build query parameters
   const queryParams = new URLSearchParams();
   if (searchQuery) queryParams.set("search", searchQuery);
-  if (selectedCategory) queryParams.set("category", selectedCategory);
-  if (selectedStatus) queryParams.set("status", selectedStatus);
-  if (selectedBlock) queryParams.set("blockId", selectedBlock);
+  if (selectedCategory && selectedCategory !== "all") queryParams.set("category", selectedCategory);
+  if (selectedStatus && selectedStatus !== "all") queryParams.set("status", selectedStatus);
+  if (selectedBlock && selectedBlock !== "all") queryParams.set("blockId", selectedBlock);
 
   const { data: documents = [], isLoading } = useQuery<DocumentWithDetails[]>({
     queryKey: ["/api/documents", queryParams.toString()],
@@ -49,13 +49,17 @@ export default function Documents() {
 
   const clearFilters = () => {
     setSearchQuery("");
-    setSelectedCategory("");
-    setSelectedStatus("");
-    setSelectedBlock("");
+    setSelectedCategory("all");
+    setSelectedStatus("all");
+    setSelectedBlock("all");
   };
 
-  const activeFiltersCount = [searchQuery, selectedCategory, selectedStatus, selectedBlock]
-    .filter(Boolean).length;
+  const activeFiltersCount = [
+    searchQuery, 
+    selectedCategory !== "all" ? selectedCategory : "", 
+    selectedStatus !== "all" ? selectedStatus : "", 
+    selectedBlock !== "all" ? selectedBlock : ""
+  ].filter(Boolean).length;
 
   return (
     <MainLayout onSearch={setSearchQuery} searchQuery={searchQuery}>
@@ -103,7 +107,7 @@ export default function Documents() {
                     <SelectValue placeholder="جميع الفئات" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">جميع الفئات</SelectItem>
+                    <SelectItem value="all">جميع الفئات</SelectItem>
                     {CATEGORIES.map((category) => (
                       <SelectItem key={category} value={category}>
                         {category}
@@ -122,7 +126,7 @@ export default function Documents() {
                     <SelectValue placeholder="جميع الحالات" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">جميع الحالات</SelectItem>
+                    <SelectItem value="all">جميع الحالات</SelectItem>
                     {STATUSES.map((status) => (
                       <SelectItem key={status} value={status}>
                         {status}
@@ -141,7 +145,7 @@ export default function Documents() {
                     <SelectValue placeholder="جميع الكتل" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">جميع الكتل</SelectItem>
+                    <SelectItem value="all">جميع الكتل</SelectItem>
                     {blocks.map((block) => (
                       <SelectItem key={block.id} value={block.id}>
                         الكتلة {block.label}

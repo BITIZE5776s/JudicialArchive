@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -106,7 +106,7 @@ export default function DocumentEditor({ documentId }: DocumentEditorProps) {
   });
 
   // Update form when document data loads
-  useState(() => {
+  React.useEffect(() => {
     if (document) {
       documentForm.reset({
         title: document.title,
@@ -523,25 +523,25 @@ export default function DocumentEditor({ documentId }: DocumentEditorProps) {
                       <div className="pt-4 border-t">
                         <h4 className="font-medium text-gray-900 mb-2">معلومات إضافية</h4>
                         <div className="grid grid-cols-2 gap-4 text-sm">
-                          {document.metadata.priority && (
+                          {(document.metadata as any)?.priority && (
                             <div>
                               <span className="font-medium text-gray-700">الأولوية:</span>
-                              <Badge className={`mr-2 ${PRIORITY_COLORS[document.metadata.priority as keyof typeof PRIORITY_COLORS]}`}>
-                                {document.metadata.priority}
+                              <Badge className={`mr-2 ${PRIORITY_COLORS[(document.metadata as any).priority as keyof typeof PRIORITY_COLORS] || ''}`}>
+                                {(document.metadata as any).priority}
                               </Badge>
                             </div>
                           )}
-                          {document.metadata.court && (
+                          {(document.metadata as any)?.court && (
                             <div>
                               <span className="font-medium text-gray-700">المحكمة:</span>
-                              <span className="mr-2">{document.metadata.court}</span>
+                              <span className="mr-2">{(document.metadata as any).court}</span>
                             </div>
                           )}
                         </div>
-                        {document.metadata.notes && (
+                        {(document.metadata as any)?.notes && (
                           <div className="mt-2">
                             <span className="font-medium text-gray-700">ملاحظات:</span>
-                            <p className="text-gray-600 mt-1">{document.metadata.notes}</p>
+                            <p className="text-gray-600 mt-1">{(document.metadata as any).notes}</p>
                           </div>
                         )}
                       </div>
@@ -654,13 +654,13 @@ export default function DocumentEditor({ documentId }: DocumentEditorProps) {
                   {document.papers.map((paper) => (
                     <div key={paper.id} className="flex items-center space-x-4 space-x-reverse p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
                       <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <i className={getFileIcon(paper.fileType)}></i>
+                        <i className={getFileIcon(paper.fileType ?? undefined)}></i>
                       </div>
                       <div className="flex-1 min-w-0">
                         <h4 className="text-sm font-medium text-gray-900 truncate">{paper.title}</h4>
                         <div className="flex items-center space-x-4 space-x-reverse mt-1">
                           <p className="text-xs text-gray-500">{paper.fileType?.toUpperCase()}</p>
-                          <p className="text-xs text-gray-500">{formatFileSize(paper.fileSize)}</p>
+                          <p className="text-xs text-gray-500">{formatFileSize(paper.fileSize ?? undefined)}</p>
                           <p className="text-xs text-gray-500">
                             {formatDistanceToNow(new Date(paper.createdAt), { addSuffix: true, locale: ar })}
                           </p>

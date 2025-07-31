@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Header } from "./header";
 import { Sidebar } from "./sidebar";
-import { DocumentUploadModal } from "../document-upload-modal";
+import { DocumentUploadModal } from "@/components/document-upload-modal";
 
 interface MainLayoutProps {
   children: React.ReactNode;
