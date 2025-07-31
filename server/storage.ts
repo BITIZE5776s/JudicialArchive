@@ -226,6 +226,8 @@ export class MemStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
     const user: User = { 
+      role: "viewer",
+      isActive: true,
       ...insertUser, 
       id,
       createdAt: new Date()
@@ -360,6 +362,8 @@ export class MemStorage implements IStorage {
     const reference = `${block.label}.${row.label}.${section.label}.${nextNumber}`;
     
     const document: Document = {
+      status: "active",
+      metadata: null,
       ...insertDocument,
       id,
       reference,
@@ -444,6 +448,10 @@ export class MemStorage implements IStorage {
   async createPaper(insertPaper: InsertPaper): Promise<Paper> {
     const id = randomUUID();
     const paper: Paper = {
+      content: null,
+      attachmentUrl: null,
+      fileType: null,
+      fileSize: null,
       ...insertPaper,
       id,
       createdAt: new Date()
