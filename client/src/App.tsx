@@ -4,6 +4,8 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
+import { SettingsProvider } from "@/contexts/settings-context";
+import { LanguageProvider } from "@/contexts/language-context";
 import NotFound from "@/pages/not-found";
 import Login from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
@@ -11,6 +13,7 @@ import Documents from "@/pages/documents";
 import DocumentEditor from "@/pages/document-editor";
 import UserManagement from "@/pages/user-management";
 import Profile from "@/pages/profile";
+import Settings from "@/pages/settings";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -113,7 +116,7 @@ function Router() {
       
       <Route path="/settings">
         <ProtectedRoute>
-          <Dashboard />
+          <Settings />
         </ProtectedRoute>
       </Route>
       
@@ -134,8 +137,12 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <AuthProvider>
-          <Toaster />
-          <Router />
+          <SettingsProvider>
+            <LanguageProvider>
+              <Toaster />
+              <Router />
+            </LanguageProvider>
+          </SettingsProvider>
         </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>

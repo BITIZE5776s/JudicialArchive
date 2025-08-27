@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/use-auth";
+import { useTranslation } from "@/contexts/language-context";
 import { useLocation } from "wouter";
 
 interface HeaderProps {
@@ -17,6 +18,7 @@ interface HeaderProps {
 
 export function Header({ onSearch, searchQuery = "" }: HeaderProps) {
   const { user, logout } = useAuth();
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
 
   const handleLogout = () => {
@@ -47,7 +49,7 @@ export function Header({ onSearch, searchQuery = "" }: HeaderProps) {
             </div>
             <Input
               type="text"
-              placeholder="البحث في الوثائق والقضايا..."
+              placeholder={t('search') + ' في الوثائق والقضايا...'}
               className="w-80 pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-gray-50"
               value={searchQuery}
               onChange={(e) => onSearch?.(e.target.value)}
@@ -73,8 +75,8 @@ export function Header({ onSearch, searchQuery = "" }: HeaderProps) {
                 <div className="text-right hidden lg:block">
                   <p className="text-sm font-medium text-gray-900">{user?.fullName}</p>
                   <p className="text-xs text-gray-600">
-                    {user?.role === 'admin' ? 'مدير النظام' : 
-                     user?.role === 'archivist' ? 'أمين الأرشيف' : 'مستعرض'}
+                    {user?.role === 'admin' ? t('admin') : 
+                     user?.role === 'archivist' ? t('archivist') : t('viewer')}
                   </p>
                 </div>
                 <div className="w-10 h-10 bg-secondary-500 rounded-full flex items-center justify-center">
