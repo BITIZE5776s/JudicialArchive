@@ -61,8 +61,21 @@ export interface IStorage {
   deletePaper(id: string): Promise<boolean>;
 
   // Dashboard methods
-  getDashboardStats(): Promise<DashboardStats>;
-  getRecentDocuments(limit?: number): Promise<DocumentWithDetails[]>;
+  getDashboardStats(userId?: string): Promise<DashboardStats>;
+  getRecentDocuments(limit?: number, userId?: string): Promise<DocumentWithDetails[]>;
+  getUserProgress(userId: string): Promise<{
+    documentsCreated: number;
+    documentsThisMonth: number;
+    documentsThisWeek: number;
+    averageProcessingTime: number;
+    lastActivity: Date | null;
+    categoryBreakdown: { [category: string]: number };
+    recentActivity: Array<{
+      action: string;
+      document: string;
+      date: Date;
+    }>;
+  }>;
 }
 
 export class MemStorage implements IStorage {
@@ -474,23 +487,87 @@ export class MemStorage implements IStorage {
   }
 
   // Dashboard methods
-  async getDashboardStats(): Promise<DashboardStats> {
-    const allDocs = Array.from(this.documents.values());
+  async getDashboardStats(userId?: string): Promise<DashboardStats> {
+    let allDocs = Array.from(this.documents.values());
+    
+    // If userId provided, filter to user-created documents
+    if (userId) {
+      allDocs = allDocs.filter(doc => doc.createdBy === userId);
+    }
     
     return {
       totalCases: allDocs.length,
-      processedDocs: allDocs.filter(doc => doc.status === 'نشط').length,
-      pendingDocs: allDocs.filter(doc => doc.status === 'معلق').length,
-      archivedCases: allDocs.filter(doc => doc.status === 'مؤرشف').length,
+      processedDocs: allDocs.filter(doc => doc.status === 'active').length,
+      pendingDocs: allDocs.filter(doc => doc.status === 'pending').length,
+      archivedCases: allDocs.filter(doc => doc.status === 'archived').length,
     };
   }
 
-  async getRecentDocuments(limit: number = 10): Promise<DocumentWithDetails[]> {
-    const docs = Array.from(this.documents.values())
+  async getRecentDocuments(limit: number = 10, userId?: string): Promise<DocumentWithDetails[]> {
+    let docs = Array.from(this.documents.values());
+    
+    // If userId provided, filter to user-created documents  
+    if (userId) {
+      docs = docs.filter(doc => doc.createdBy === userId);
+    }
+    
+    docs = docs
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
       .slice(0, limit);
     
     return Promise.all(docs.map(doc => this.getDocumentWithDetails(doc)));
+  }
+  
+  async getUserProgress(userId: string): Promise<{
+    documentsCreated: number;
+    documentsThisMonth: number;
+    documentsThisWeek: number;
+    averageProcessingTime: number;
+    lastActivity: Date | null;
+    categoryBreakdown: { [category: string]: number };
+    recentActivity: Array<{
+      action: string;
+      document: string;
+      date: Date;
+    }>;
+  }> {
+    const userDocs = Array.from(this.documents.values()).filter(doc => doc.createdBy === userId);
+    const now = new Date();
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    
+    const documentsThisWeek = userDocs.filter(doc => doc.createdAt >= oneWeekAgo).length;
+    const documentsThisMonth = userDocs.filter(doc => doc.createdAt >= oneMonthAgo).length;
+    
+    // Calculate category breakdown
+    const categoryBreakdown: { [category: string]: number } = {};
+    userDocs.forEach(doc => {
+      categoryBreakdown[doc.category] = (categoryBreakdown[doc.category] || 0) + 1;
+    });
+    
+    // Get recent activity
+    const recentActivity = userDocs
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(0, 5)
+      .map(doc => ({
+        action: 'إنشاء وثيقة',
+        document: doc.title,
+        date: doc.createdAt
+      }));
+    
+    const lastActivity = userDocs.length > 0 ? 
+      userDocs.reduce((latest, doc) => doc.createdAt > latest ? doc.createdAt : latest, new Date(0)) : 
+      null;
+    
+    return {
+      documentsCreated: userDocs.length,
+      documentsThisMonth,
+      documentsThisWeek,
+      averageProcessingTime: 2.5, // Mock average processing time in days
+      lastActivity,
+      categoryBreakdown,
+      recentActivity
+    };
   }
 }
 

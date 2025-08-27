@@ -248,7 +248,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard routes
   app.get("/api/dashboard/stats", async (req, res) => {
     try {
-      const stats = await storage.getDashboardStats();
+      const { userId } = req.query;
+      const stats = await storage.getDashboardStats(userId as string);
       res.json(stats);
     } catch (error) {
       res.status(500).json({ message: "خطأ في جلب الإحصائيات" });
@@ -258,10 +259,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/dashboard/recent-documents", async (req, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 10;
-      const documents = await storage.getRecentDocuments(limit);
+      const { userId } = req.query;
+      const documents = await storage.getRecentDocuments(limit, userId as string);
       res.json(documents);
     } catch (error) {
       res.status(500).json({ message: "خطأ في جلب الوثائق الحديثة" });
+    }
+  });
+
+  app.get("/api/dashboard/user-progress", async (req, res) => {
+    try {
+      const { userId } = req.query;
+      if (!userId) {
+        return res.status(400).json({ message: "معرف المستخدم مطلوب" });
+      }
+      const progress = await storage.getUserProgress(userId as string);
+      res.json(progress);
+    } catch (error) {
+      res.status(500).json({ message: "خطأ في جلب تقدم المستخدم" });
     }
   });
 

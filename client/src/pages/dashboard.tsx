@@ -13,17 +13,39 @@ export default function Dashboard() {
   const { user } = useAuth();
 
   const { data: stats } = useQuery<DashboardStats>({
-    queryKey: ["/api/dashboard/stats"],
+    queryKey: ["/api/dashboard/stats", user?.id],
+    queryFn: () => fetch(`/api/dashboard/stats?userId=${user?.id}`).then(res => res.json()),
+    enabled: !!user?.id,
   });
 
   const { data: recentDocuments = [] } = useQuery<DocumentWithDetails[]>({
-    queryKey: ["/api/dashboard/recent-documents"],
-    queryFn: () => fetch("/api/dashboard/recent-documents?limit=5").then(res => res.json()),
+    queryKey: ["/api/dashboard/recent-documents", user?.id],
+    queryFn: () => fetch(`/api/dashboard/recent-documents?limit=5&userId=${user?.id}`).then(res => res.json()),
+    enabled: !!user?.id,
   });
 
   const { data: recentCases = [] } = useQuery<DocumentWithDetails[]>({
-    queryKey: ["/api/dashboard/recent-cases"],
-    queryFn: () => fetch("/api/dashboard/recent-documents?limit=3").then(res => res.json()),
+    queryKey: ["/api/dashboard/recent-cases", user?.id],
+    queryFn: () => fetch(`/api/dashboard/recent-documents?limit=3&userId=${user?.id}`).then(res => res.json()),
+    enabled: !!user?.id,
+  });
+
+  const { data: userProgress } = useQuery<{
+    documentsCreated: number;
+    documentsThisMonth: number;
+    documentsThisWeek: number;
+    averageProcessingTime: number;
+    lastActivity: Date | null;
+    categoryBreakdown: { [category: string]: number };
+    recentActivity: Array<{
+      action: string;
+      document: string;
+      date: Date;
+    }>;
+  }>({
+    queryKey: ["/api/dashboard/user-progress", user?.id],
+    queryFn: () => fetch(`/api/dashboard/user-progress?userId=${user?.id}`).then(res => res.json()),
+    enabled: !!user?.id,
   });
 
   return (
@@ -40,67 +62,142 @@ export default function Dashboard() {
 
         {/* Dashboard Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            مرحباً، {user?.fullName}
-          </h1>
-          <p className="text-gray-600">
-            إليك نظرة عامة على قضاياك ووثائقك الحديثة.
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center space-x-3 space-x-reverse mb-2">
+                <h1 className="text-2xl font-bold text-gray-900">
+                  مرحباً، {user?.fullName}
+                </h1>
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 text-primary-700">
+                  {user?.role === 'admin' ? 'مدير النظام' : 
+                   user?.role === 'archivist' ? 'أمين الأرشيف' : 'مستعرض'}
+                </span>
+              </div>
+              <p className="text-gray-600">
+                إليك نظرة عامة على تقدمك ووثائقك الحديثة.
+              </p>
+              {userProgress?.lastActivity && (
+                <p className="text-sm text-gray-500 mt-1">
+                  آخر نشاط: {new Date(userProgress.lastActivity).toLocaleDateString('ar-SA')}
+                </p>
+              )}
+            </div>
+            <div className="text-left">
+              <div className="text-sm text-gray-600">
+                إجمالي الوثائق المُنشأة
+              </div>
+              <div className="text-3xl font-bold text-primary-600">
+                {userProgress?.documentsCreated || 0}
+              </div>
+              <div className="text-xs text-gray-500">
+                +{userProgress?.documentsThisMonth || 0} هذا الشهر
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatsCard
-            title="إجمالي القضايا"
+            title={user?.role === 'admin' ? 'إجمالي القضايا' : 'قضاياي'}
             value={stats?.totalCases || 0}
             icon="fas fa-folder"
             iconBgColor="bg-primary-100"
             iconColor="text-primary-600"
             trend={{
-              value: "+12%",
+              value: `+${userProgress?.documentsThisMonth || 0}`,
               label: "هذا الشهر",
               positive: true,
             }}
           />
 
           <StatsCard
-            title="الوثائق المعالجة"
+            title={user?.role === 'admin' ? 'الوثائق المعالجة' : 'وثائقي النشطة'}
             value={stats?.processedDocs || 0}
             icon="fas fa-file-check"
             iconBgColor="bg-secondary-100"
             iconColor="text-secondary-600"
             trend={{
-              value: "+8%",
+              value: `+${userProgress?.documentsThisWeek || 0}`,
               label: "هذا الأسبوع",
               positive: true,
             }}
           />
 
           <StatsCard
-            title="في الانتظار"
+            title={user?.role === 'admin' ? 'في الانتظار' : 'معلقة'}
             value={stats?.pendingDocs || 0}
             icon="fas fa-clock"
             iconBgColor="bg-accent-100"
             iconColor="text-accent-600"
             trend={{
-              value: "+3",
-              label: "اليوم",
+              value: stats?.pendingDocs ? `${stats.pendingDocs}` : '0',
+              label: "تحتاج مراجعة",
               positive: false,
             }}
           />
 
           <StatsCard
-            title="مؤرشفة"
+            title={user?.role === 'admin' ? 'مؤرشفة' : 'مؤرشفة'}
             value={stats?.archivedCases || 0}
             icon="fas fa-archive"
             iconBgColor="bg-gray-100"
             iconColor="text-gray-600"
             trend={{
-              value: "+5",
-              label: "هذا الشهر",
+              value: `${Math.round((userProgress?.averageProcessingTime || 0) * 10) / 10}ي`,
+              label: "متوسط المعالجة",
             }}
           />
         </div>
+
+        {/* User Progress Section */}
+        {userProgress && (
+          <div className="mb-8">
+            <Card>
+              <CardHeader>
+                <CardTitle>تقدم المستخدم</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="text-center p-4 bg-blue-50 rounded-lg">
+                    <div className="text-2xl font-bold text-blue-600 mb-1">
+                      {userProgress.documentsThisWeek}
+                    </div>
+                    <div className="text-sm text-blue-700">هذا الأسبوع</div>
+                  </div>
+                  <div className="text-center p-4 bg-green-50 rounded-lg">
+                    <div className="text-2xl font-bold text-green-600 mb-1">
+                      {userProgress.averageProcessingTime}
+                    </div>
+                    <div className="text-sm text-green-700">متوسط وقت المعالجة (أيام)</div>
+                  </div>
+                  <div className="text-center p-4 bg-purple-50 rounded-lg">
+                    <div className="text-2xl font-bold text-purple-600 mb-1">
+                      {Object.keys(userProgress.categoryBreakdown).length}
+                    </div>
+                    <div className="text-sm text-purple-700">فئات مختلفة</div>
+                  </div>
+                </div>
+                
+                {userProgress.recentActivity.length > 0 && (
+                  <div className="mt-6">
+                    <h4 className="font-medium text-gray-900 mb-3">النشاط الأخير</h4>
+                    <div className="space-y-2">
+                      {userProgress.recentActivity.slice(0, 3).map((activity, index) => (
+                        <div key={index} className="flex items-center justify-between text-sm">
+                          <span className="text-gray-900">{activity.action}: {activity.document}</span>
+                          <span className="text-gray-500">
+                            {new Date(activity.date).toLocaleDateString('ar-SA')}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Recent Documents */}
