@@ -280,6 +280,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Profile route
+  app.get("/api/profile", async (req, res) => {
+    try {
+      const { userId } = req.query;
+      if (!userId) {
+        return res.status(400).json({ message: "معرف المستخدم مطلوب" });
+      }
+      
+      const user = await storage.getUser(userId as string);
+      if (!user) {
+        return res.status(404).json({ message: "المستخدم غير موجود" });
+      }
+      
+      const userProgress = await storage.getUserProgress(userId as string);
+      const userDocs = await storage.getRecentDocuments(50, userId as string);
+      
+      // Generate activity calendar data
+      const activityCalendar: { [date: string]: number } = {};
+      const today = new Date();
+      const threeMonthsAgo = new Date(today);
+      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+      
+      userDocs.forEach(doc => {
+        const dateStr = doc.createdAt.toISOString().split('T')[0];
+        activityCalendar[dateStr] = (activityCalendar[dateStr] || 0) + 1;
+      });
+      
+      // Generate category progress
+      const categoryProgress: { [category: string]: number } = {};
+      const categories = ['legal', 'financial', 'administrative', 'civil', 'criminal', 'commercial', 'family'];
+      categories.forEach(category => {
+        const categoryDocs = userDocs.filter(doc => doc.category === category);
+        const completedDocs = categoryDocs.filter(doc => doc.status === 'active');
+        categoryProgress[category] = categoryDocs.length > 0 ? 
+          Math.round((completedDocs.length / categoryDocs.length) * 100) : 0;
+      });
+      
+      const recentActivities = userDocs.slice(0, 10).map(doc => ({
+        action: 'إنشاء وثيقة',
+        document: doc.title,
+        date: doc.createdAt.toISOString(),
+        category: doc.category
+      }));
+      
+      const { password, ...userWithoutPassword } = user;
+      
+      const profileData = {
+        user: userWithoutPassword,
+        statistics: {
+          totalDocuments: userProgress.documentsCreated,
+          documentsThisMonth: userProgress.documentsThisMonth,
+          documentsThisWeek: userProgress.documentsThisWeek,
+          averageProcessingTime: userProgress.averageProcessingTime,
+          completionRate: Math.round((userProgress.documentsCreated / Math.max(userProgress.documentsCreated + 5, 10)) * 100),
+          categoryProgress
+        },
+        activityCalendar,
+        recentActivities
+      };
+      
+      res.json(profileData);
+    } catch (error) {
+      res.status(500).json({ message: "خطأ في جلب بيانات الملف الشخصي" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

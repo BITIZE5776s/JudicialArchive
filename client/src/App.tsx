@@ -10,6 +10,7 @@ import Dashboard from "@/pages/dashboard";
 import Documents from "@/pages/documents";
 import DocumentEditor from "@/pages/document-editor";
 import UserManagement from "@/pages/user-management";
+import Profile from "@/pages/profile";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -118,7 +119,7 @@ function Router() {
       
       <Route path="/profile">
         <ProtectedRoute>
-          <Dashboard />
+          <Profile />
         </ProtectedRoute>
       </Route>
       
